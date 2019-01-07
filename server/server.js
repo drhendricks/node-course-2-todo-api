@@ -9,6 +9,10 @@ var app = express();
 
 app.use(bodyParser.json());
 
+app.get('/', (req, res) => {
+    res.send('Welcome to the todo app!');
+});
+
 app.get('/todos', (req, res) => {
     Todo.find().then((todos) => {
         res.send({todos});
