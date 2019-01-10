@@ -7,10 +7,14 @@ const {Todo} = require('./../models/todo');
 
 const todos = [{
     _id: new ObjectID(),
-    text: 'First test todo'
+    text: 'First test todo',
+    completed: false,
+    completedAt: null
 }, {
     _id: new ObjectID(),
-    text: 'Second test todo'
+    text: 'Second test todo',
+    completed: true,
+    completedAt: 1000
 }];
 
 beforeEach((done) => {
@@ -151,4 +155,100 @@ describe('DELETE /todos/:id', () => {
                 }).catch((e) => done(e));
             });
     })
+});
+
+describe('PATCH /todos/:id', () => {
+    it('should update a todo with completed set false->true', (done) => {
+        var hexID = todos[0]._id.toHexString();
+        //check that completedAt gets set to a value
+        //Make sure text is unchanged and completed set as expected
+        request(app)
+            .patch(`/todos/${hexID}`)
+            .send({completed: true})
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.todo.text).toBe(todos[0].text);
+                expect(res.body.todo.completedAt).toBeA('number');
+                expect(res.body.todo.completed).toBe(true);
+            })
+            .end(done);
+    });
+
+    it('should update a todo with completed set true->false', (done) => {
+        var hexID = todos[0]._id.toHexString();
+        //check that completedAt gets set to null
+        //Make sure text is unchanged and completed set as expected
+        request(app)
+            .patch(`/todos/${hexID}`)
+            .send({completed: false})
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.todo.completedAt).toNotExist();
+                expect(res.body.todo.completed).toBe(false);
+                expect(res.body.todo.text).toBe(todos[0].text);
+            })
+            .end(done);
+    });
+
+    it('should update a todo without completed value', (done) => {
+        var hexID = todos[0]._id.toHexString();
+        var newText = 'New text from update';
+        //check that completedAt still null
+        //Make sure text is changed as expected
+        request(app)
+            .patch(`/todos/${hexID}`)
+            .send({text: newText})
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.todo.completedAt).toNotExist();
+                expect(res.body.todo.completed).toBe(false);
+                expect(res.body.todo.text).toBe(newText);
+            })
+            .end(done);
+    });
+
+    it('should not update a todo with an invalid ObjectID', (done) => {
+        request(app)
+            .patch(`/todos/123`)
+            .expect(404)
+            .end((err, res) => {
+                if(err) {
+                    return done(err);
+                }
+                Todo.find().then((todosAfter) => {
+                    expect(todosAfter.length).toBe(2);
+                    var i = 0;
+                    //make sure items are unchanged
+                    todosAfter.forEach((item) => {
+                        expect(item.text).toBe(todos[i].text);
+                        expect(item.completed).toBe(todos[i].completed);
+                        expect(item.completedAt).toBe(todos[i].completedAt);
+                        i++;
+                    });
+                    done();
+                }).catch((e) => done(e));
+            });
+    });
+    it('should not update a todo with a non-existent ObjectID', (done) => {
+        request(app)
+            .patch(`/todos/${new ObjectID()}`)
+            .expect(404)
+            .end((err, res) => {
+                if(err) {
+                    return done(err);
+                }
+                Todo.find().then((todosAfter) => {
+                    expect(todosAfter.length).toBe(2);
+                    var i = 0;
+                    //make sure items are unchanged
+                    todosAfter.forEach((item) => {
+                        expect(item.text).toBe(todos[i].text);
+                        expect(item.completed).toBe(todos[i].completed);
+                        expect(item.completedAt).toBe(todos[i].completedAt);
+                        i++;
+                    });
+                    done();
+                }).catch((e) => done(e));
+            });
+    });
 });
