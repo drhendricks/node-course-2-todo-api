@@ -107,15 +107,19 @@ app.patch('/todos/:id', (req, res) => {
 //POST /users (sign up)
 app.post('/users', (req, res) => {
     var body = _.pick(req.body, ['email', 'password']);
-    var user = new User(body);
-    user.save().then(() => {
-        return user.generateAuthToken();
-    }).then((token) => {
-        //set x-auth property of res header
-        res.header('x-auth', token).send({user});
-    }).catch((e) => {
+    if(body.password && body.email) {
+        var user = new User(body);
+        user.save().then(() => {
+            return user.generateAuthToken();
+        }).then((token) => {
+            //set x-auth property of res header
+            res.header('x-auth', token).send({user});
+        }).catch((e) => {
+            res.status(400).send(e);
+        });
+    } else {
         res.status(400).send(e);
-    });
+    }
 });
 
 //private route
